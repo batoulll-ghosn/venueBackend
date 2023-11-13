@@ -1,7 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const control = require("../controller/reservationControl");
+router.get("/getAllReservation", control.getAllReservation);
 router.get("/getReservedUser/:id", control.reservationByUserId);
 router.get("/getReservedEvent/:id", control.reservationByEventId);
 router.get("/getReservation/:id", control.reservationResId);
+router.get("/getReservationId/:id", control.reservationById);
+router.post("/postReservation", control.postReservation);
+router.delete("/deletereservation/:id", control.deleteReservation);
+router.put("/updateReservation/:ID", control.updatedReservation);
 module.exports = router;

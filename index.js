@@ -7,8 +7,10 @@ require("./config/db");
 const cloud = require("./config/cloud");
 const userRoutes = require("./routes/userRouter");
 const reservationRoutes = require("./routes/reservationRouter");
+const EventRoutes = require("./routes/eventRoute");
 app.use(bodyParser.json());
 app.use("/user", userRoutes);
+app.use("/event", EventRoutes);
 app.use("/reserve", reservationRoutes);
 app.get("/", (req, res) => {
   res.send("Hello World!");
