@@ -69,25 +69,41 @@ const postVenue = async (req, res) => {
   }
 };
 const updateVenue = async (req, res) => {
-  const { name, description, capacity, image, address } = req.body;
-  const ID = req.params.ID;
+  const { name, description, capacity, address } = req.body;
+  const VenueId = req.params.id;
+
   try {
-    const sql = `UPDATE venues
-                         SET name = '${name}',description = '${description}',capacity = '${capacity}',image = '${image}',address = '${address}'
-                         WHERE ID= ${ID}`;
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Image not provided",
+      });
+    }
 
-    const [result] = await dbb.query(sql);
+    const imageBuffer = req.file.buffer.toString("base64");
+    const imageResult = await cloudinary.uploader.upload(
+      `data:image/png;base64,${imageBuffer}`,
+      {
+        folder: "venues",
+      }
+    );
 
+    const result = await db.query(
+      `UPDATE venues SET name = ?, description = ?, capacity = ?, image = ?, address = ? WHERE ID = ?`,
+      [name, description, capacity, imageResult.secure_url, address, VenueId]
+    );
+
+    console.log(result);
     res.status(200).json({
       success: true,
-      message: "Data updated successfully.",
-      data: result,
+      message: "Data updated successfully",
     });
   } catch (error) {
+    console.error(error);
     res.status(400).json({
       success: false,
       message: "Unable to update data",
-      error: error,
+      error: error.message,
     });
   }
 };

@@ -93,8 +93,8 @@ const reservationByEventId = async (req, res) => {
 const reservationById = async (req, res) => {
   try {
     const [result] = await dbb.query(
-      `SELECT users.*, reservation.ID, events.*
-        FROM users 
+      `SELECT events.*,users.*, reservation.ID, events.*
+        FROM evebts,users 
             LEFT JOIN reservation ON reservation.userID = users.ID 
             LEFT JOIN events ON reservation.eventID = events.ID
         WHERE reservation.ID = ${id};`,
