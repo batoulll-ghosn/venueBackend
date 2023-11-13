@@ -6,4 +6,5 @@ router.get("/getAll", control.getAllUsers);
 router.get("/getById/:id", control.UserByUserId);
 router.delete("/deleteuser/:id", control.deleteAllUsers);
 router.put("/updateUser/:ID", control.updatedUser);
+router.post("/login", control.loginUser);
 module.exports = router;

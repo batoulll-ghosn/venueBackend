@@ -1,4 +1,6 @@
 const dbb = require("../config/db");
+const cloudinaryConfig = require("../config/cloud");
+const cloudinary = require("cloudinary").v2;
 const getAllVenue = async (req, res) => {
   try {
     const [result] = await dbb.query(`SELECT * FROM venues`);
@@ -34,10 +36,24 @@ const venueById = async (req, res) => {
   }
 };
 const postVenue = async (req, res) => {
-  const { name, description, capacity, image, address } = req.body;
+  const { name, description, capacity, address } = req.body;
+
   try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Image not provided",
+      });
+    }
+    const imageBuffer = req.file.buffer.toString("base64");
+    const imageResult = await cloudinary.uploader.upload(
+      `data:image/png;base64,${imageBuffer}`,
+      {
+        folder: "venues",
+      }
+    );
     const [result] = await dbb.query(
-      `INSERT INTO venues(name, description,capacity,image,address) VALUES ('${name}','${description}','${capacity}','${image}','${address}'`
+      `INSERT INTO venues(name, description,capacity,image,address) VALUES ('${name}','${description}','${capacity}','${imageResult.secure_url}','${address}'`
     );
     res.status(200).json({
       success: true,

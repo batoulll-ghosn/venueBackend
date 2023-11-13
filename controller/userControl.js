@@ -15,6 +15,47 @@ const getAllUsers = async (req, res) => {
     });
   }
 };
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const [result] = await db.query(
+      `SELECT ID, role, password FROM users WHERE email = ?`,
+      [email]
+    );
+
+    if (!result || result.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const storedPassword = result[0].password;
+
+    if (password !== storedPassword) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid password",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successfully",
+      role: result[0].role,
+      ID: result[0].ID,
+    });
+  } catch (error) {
+    console.error("Error during login:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to log in",
+      error: error.message,
+    });
+  }
+};
+
 const UserByUserId = async (req, res) => {
   try {
     const [result] = await dbb.query(`SELECT * FROM users WHERE ID = ?`, [
@@ -99,4 +140,5 @@ module.exports = {
   postUser,
   deleteAllUsers,
   updatedUser,
+  loginUser,
 };
