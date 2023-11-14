@@ -1,4 +1,32 @@
 const dbb = require("../config/db");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const secretKey = crypto.randomBytes(64).toString("hex");
+
+const authenticateToken = (req, res, next) => {
+  const token = req.headers["authorization"];
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
+const checkRole = (role) => {
+  return (req, res, next) => {
+    if (req.user.role !== role) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+    next();
+  };
+};
+
 const getAllUsers = async (req, res) => {
   try {
     const [result] = await dbb.query(`SELECT * FROM users`);
@@ -15,6 +43,7 @@ const getAllUsers = async (req, res) => {
     });
   }
 };
+
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -33,7 +62,9 @@ const loginUser = async (req, res) => {
 
     const storedPassword = result[0].password;
 
-    if (password !== storedPassword) {
+    const passwordMatch = await bcrypt.compare(password, storedPassword);
+
+    if (!passwordMatch) {
       return res.status(401).json({
         success: false,
         message: "Invalid password",
@@ -55,20 +86,40 @@ const loginUser = async (req, res) => {
     });
   }
 };
+
+const generateToken = (userId) => {
+  const secretKey = crypto.randomBytes(64).toString("hex");
+  const expiresIn = "1h";
+
+  const token = jwt.sign({ userId }, secretKey, { expiresIn: "1h" });
+
+  return token;
+};
+
 const register = async (req, res) => {
   const { fullName, email, password } = req.body;
-  const query = `INSERT INTO users (fullName, email, password) VALUES (?, ?, ?);`;
+
   try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const query = `INSERT INTO users (fullName, email, password) VALUES (?, ?, ?);`;
     const [response] = await connection.query(query, [
       fullName,
       email,
-      password,
+      hashedPassword,
     ]);
-    const [data] = await getUserByID(response.insertId);
+
+    const userId = response.insertId;
+
+    const token = generateToken(userId);
+
+    const [data] = await getUserByID(userId);
+
     res.status(200).json({
       success: true,
       message: `User registered successfully`,
       data: data,
+      token: token,
     });
   } catch (error) {
     return res.status(400).json({
@@ -200,4 +251,5 @@ module.exports = {
   loginUser,
   register,
   switchToAdmin,
+  generateToken,
 };
