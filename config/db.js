@@ -7,7 +7,7 @@ const DATABASE = process.env.DATABASE;
 const connection = mysql.createPool({
   host: HOST,
   user: USER,
-  password: '',
+  password: "",
   database: DATABASE,
 });
 

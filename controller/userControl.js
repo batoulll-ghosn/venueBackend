@@ -55,6 +55,29 @@ const loginUser = async (req, res) => {
     });
   }
 };
+const register = async (req, res) => {
+  const { fullName, email, password } = req.body;
+  const query = `INSERT INTO users (fullName, email, password) VALUES (?, ?, ?);`;
+  try {
+    const [response] = await connection.query(query, [
+      fullName,
+      email,
+      password,
+    ]);
+    const [data] = await getUserByID(response.insertId);
+    res.status(200).json({
+      success: true,
+      message: `User registered successfully`,
+      data: data,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: `Unable to register a new user`,
+      error: error.message,
+    });
+  }
+};
 
 const UserByUserId = async (req, res) => {
   try {
@@ -134,6 +157,40 @@ const deleteAllUsers = async (req, res) => {
     });
   }
 };
+const switchToAdmin = async (req, res) => {
+  const { ID } = req.params;
+  const query = `UPDATE users SET role = 'admin' WHERE ID = ?;`;
+
+  try {
+    const [response] = await connection.query(query, [ID]);
+    if (!response.affectedRows)
+      return res.status(400).json({
+        success: false,
+        message: `User with ID = ${ID} not found`,
+      });
+    const data = await getUserByID(ID);
+    res.status(200).json({
+      success: true,
+      message: `User with ID = ${ID} switched to admin successfully`,
+      data: data[0],
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: `Unable to switch to admin for user with ID = ${ID}`,
+      error: error.message,
+    });
+  }
+};
+const getUserByID = async (ID) => {
+  const query = `SELECT ID, fullName, email, role FROM users WHERE ID = ?;`;
+  try {
+    const [response] = await connection.query(query, [ID]);
+    return response;
+  } catch (error) {
+    return error;
+  }
+};
 module.exports = {
   getAllUsers,
   UserByUserId,
@@ -141,4 +198,6 @@ module.exports = {
   deleteAllUsers,
   updatedUser,
   loginUser,
+  register,
+  switchToAdmin,
 };
