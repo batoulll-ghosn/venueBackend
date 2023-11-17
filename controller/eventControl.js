@@ -1,4 +1,4 @@
-const { format } = require('date-fns');
+const { format } = require("date-fns");
 const connection = require("../config/db");
 
 const getAll = async (_, res) => {
@@ -10,7 +10,7 @@ const getAll = async (_, res) => {
       message: `All events retrieved successfully.`,
       data: response.map((event) => ({
         ...event,
-        date: format(new Date(event.date), 'yyyy-MM-dd'),
+        date: format(new Date(event.date), "yyyy-MM-dd"),
       })),
     });
   } catch (error) {
@@ -41,19 +41,20 @@ const getByID = async (req, res) => {
     message: `Event with id ${ID} retrieved successfully.`,
     data: {
       ...response[0],
-      date: format(new Date(response[0].date), 'yyyy-MM-dd'),
+      date: format(new Date(response[0].date), "yyyy-MM-dd"),
     },
   });
 };
 
 const addEvent = async (req, res) => {
-  const { title, ticketPrice, description, venueID } = req.body;
-  const query = `INSERT INTO events (title, ticketPrice, description, venueID) VALUES (?, ?, ?, ?)`;
-
+  const { title, ticketPrice, date, description, venueID } = req.body;
+  const query = `INSERT INTO events (title, ticketPrice,date, description, venueID) VALUES (?,?, ?, ?, ?)`;
+  console.log(date);
   try {
     const [response] = await connection.query(query, [
       title,
       ticketPrice,
+      date,
       description,
       venueID,
     ]);
@@ -62,7 +63,7 @@ const addEvent = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `Event added successfully.`,
-      data: { ...data[0], date: format(new Date(data[0].date), 'yyyy-MM-dd') },
+      data: { ...data[0], date: format(new Date(data[0].date), "yyyy-MM-dd") },
     });
   } catch (error) {
     return res.status(400).json({
@@ -104,7 +105,7 @@ const updateByID = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `Event updated successfully.`,
-      data: { ...data[0], date: format(new Date(data[0].date), 'yyyy-MM-dd') },
+      data: { ...data[0], date: format(new Date(data[0].date), "yyyy-MM-dd") },
     });
   } catch (error) {
     return res.status(400).json({

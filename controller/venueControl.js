@@ -37,32 +37,32 @@ const venueById = async (req, res) => {
   }
 };
 const postVenue = async (req, res) => {
-  async (req, res) => {
-    const { name, description, capacity, address } = req.body;
-    const query = `INSERT INTO venues (name, description, capacity, image, address) VALUES (?, ?, ?, ?, ?);`;
-    try {
-      const imageURL = await imageUploader(req.file);
-      const [response] = await connection.query(query, [
-        name,
-        description,
-        capacity,
-        imageURL,
-        address,
-      ]);
-      const [data] = await getVenueByID(response.insertId);
-      res.status(200).json({
-        success: true,
-        message: `Venue added successfully`,
-        data: data,
-      });
-    } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: `Unable to add venue`,
-        error: error.message,
-      });
-    }
-  };
+  const { name, description, capacity, address } = req.body;
+  const query = `INSERT INTO venues (name, description, capacity, image, address) VALUES (?, ?, ?, ?, ?);`;
+  try {
+    const imageURL = await imageUploader(req.file);
+    console.log(imageURL);
+    const [response] = await dbb.query(query, [
+      name,
+      description,
+      capacity,
+      imageURL,
+      address,
+    ]);
+    const [data] = await getVenueByID(response.insertId);
+
+    res.status(200).json({
+      success: true,
+      message: `Venue added successfully`,
+      data: data,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: `Unable to add venue`,
+      error: error.message,
+    });
+  }
 };
 const updateVenue = async (req, res) => {
   const { ID } = req.params;
@@ -76,7 +76,7 @@ const updateVenue = async (req, res) => {
       imageURL = image;
     }
     console.log(imageURL);
-    const [response] = await connection.query(query, [
+    const [response] = await dbb.query(query, [
       name,
       description,
       capacity,
@@ -119,7 +119,7 @@ const deleteVenue = async (req, res) => {
 const getVenueByID = async (ID) => {
   const query = `SELECT * FROM venues WHERE ID = ?;`;
   try {
-    const [response] = await connection.query(query, [ID]);
+    const [response] = await dbb.query(query, [ID]);
     return response;
   } catch (error) {
     return error;
