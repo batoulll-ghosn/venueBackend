@@ -19,44 +19,33 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-const loginUser = async (req, res) => {
+const login = async (req, res) => {
   const { email, password } = req.body;
-
+  const query = `SELECT email,password FROM users WHERE email = ?;`;
   try {
-    const [result] = await db.query(
-      `SELECT ID, role, password FROM users WHERE email = ?`,
-      [email]
-    );
+    const [response] = await dbb.query(query, [email]);
 
-    if (!result || result.length === 0) {
-      return res.status(401).json({
+    if (!response.length || response.length === 0)
+      return res.status(400).json({
         success: false,
-        message: "User not found",
+        message: `User with email ${email} not found`,
+      });
+
+    const THEPassword = response[0].password;
+    if (password !== THEPassword) {
+      return res.status(400).json({
+        success: false,
+        message: `Entered password of email ${email} is wrong`,
       });
     }
-
-    const storedPassword = result[0].password;
-
-    const passwordMatch = await bcrypt.compare(password, storedPassword);
-
-    if (!passwordMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid password",
-      });
-    }
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Login successfully",
-      role: result[0].role,
-      ID: result[0].ID,
+      message: `User with email ${email} logged in successfully`,
     });
   } catch (error) {
-    console.error("Error during login:", error);
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
-      message: "Unable to log in",
+      message: `Unable to login for user with email ${email}`,
       error: error.message,
     });
   }
@@ -110,7 +99,7 @@ const postUser = async (req, res) => {
   const { fullName, email, password, role } = req.body;
   try {
     const [result] = await dbb.query(
-      `INSERT INTO users(fullName, email, password, role) VALUES ("${fullName}","${email}","${password}","${role}")`
+      `INSERT INTO users(fullName, email, password) VALUES ("${fullName}","${email}","${password}")`
     );
     res.status(200).json({
       success: true,
@@ -125,29 +114,33 @@ const postUser = async (req, res) => {
     });
   }
 };
-const updatedUser = async (req, res) => {
-  const { fullName, email, password, role, active } = req.body;
-  const ID = req.params.ID;
+const updateByID = async (req, res) => {
+  const { ID } = req.params;
+  const { fullName, email } = req.body;
+  const query = `UPDATE users SET fullName = ?, email = ? WHERE ID = ?;`;
+
   try {
-    const sql = `UPDATE users
-                     SET fullName = '${fullName}',email = '${email}', password = '${password}', role = '${role}'
-                     WHERE ID= ${ID}`;
-
-    const [result] = await dbb.query(sql);
-
+    const [response] = await dbb.query(query, [fullName, email, ID]);
+    if (!response.affectedRows)
+      return res.status(400).json({
+        success: false,
+        message: `User with ID = ${ID} not found`,
+      });
+    const data = await getUserByID(ID);
     res.status(200).json({
       success: true,
-      message: "Data updated successfully.",
-      data: result,
+      message: `User with ID = ${ID} updated successfully`,
+      data: data[0],
     });
   } catch (error) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
-      message: "Unable to update data",
-      error: error,
+      message: `Unable to update user with ID = ${ID}`,
+      error: error.message,
     });
   }
 };
+
 const deleteAllUsers = async (req, res) => {
   try {
     const [result] = await dbb.query(`DELETE FROM users WHERE ID = ?`, [
@@ -171,7 +164,7 @@ const switchToAdmin = async (req, res) => {
   const query = `UPDATE users SET role = 'admin' WHERE ID = ?;`;
 
   try {
-    const [response] = await connection.query(query, [ID]);
+    const [response] = await dbb.query(query, [ID]);
     if (!response.affectedRows)
       return res.status(400).json({
         success: false,
@@ -205,8 +198,8 @@ module.exports = {
   UserByUserId,
   postUser,
   deleteAllUsers,
-  updatedUser,
-  loginUser,
+  updateByID,
+  login,
   register,
   switchToAdmin,
   generateToken,

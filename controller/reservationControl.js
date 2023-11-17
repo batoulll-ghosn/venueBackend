@@ -39,12 +39,12 @@ const getByID = async (req, res) => {
 
 const getByUserID = async (req, res) => {
   const { ID } = req.params;
-  const query = `SELECT reservations.ID AS reservationID, reservations.userID, users.fullName, users.email, users.role, reservations.eventID, events.title, events.date, events.ticketPrice, events.description, events.venueID, venues.name, venues.description,venues.capacity,venues.image,venues.address
-                    FROM reservations
-                    INNER JOIN users ON users.ID = reservations.userID
-                    INNER JOIN events ON events.ID = reservations.eventID
+  const query = `SELECT reservation.ID AS reservationID, reservation.userID, users.fullName, users.email, users.role, reservation.eventID, events.title, events.date, events.ticketPrice, events.description, events.venueID, venues.name, venues.description,venues.capacity,venues.image,venues.address
+                    FROM reservation
+                    INNER JOIN users ON users.ID = reservation.userID
+                    INNER JOIN events ON events.ID = reservation.eventID
                     INNER JOIN venues ON venues.ID = events.venueID
-                    WHERE reservations.userID = ?;`;
+                    WHERE reservation.userID = ?;`;
 
   try {
     const [response] = await connection.query(query, [ID]);
@@ -64,12 +64,12 @@ const getByUserID = async (req, res) => {
 
 const getByEventID = async (req, res) => {
   const { ID } = req.params;
-  const query = `SELECT reservations.ID AS reservationID, reservations.userID, users.fullName, users.email, users.role, reservations.eventID, events.title, events.date, events.ticketPrice, events.description, events.venueID, venues.name, venues.description,venues.capacity,venues.image,venues.address
-                    FROM reservations
-                    INNER JOIN users ON users.ID = reservations.userID
-                    INNER JOIN events ON events.ID = reservations.eventID
+  const query = `SELECT reservation.ID AS reservationID, reservation.userID, users.fullName, users.email, users.role, reservation.eventID, events.title, events.date, events.ticketPrice, events.description, events.venueID, venues.name, venues.description,venues.capacity,venues.image,venues.address
+                    FROM reservation
+                    INNER JOIN users ON users.ID = reservation.userID
+                    INNER JOIN events ON events.ID = reservation.eventID
                     INNER JOIN venues ON venues.ID = events.venueID
-                    WHERE reservations.eventID = ?;`;
+                    WHERE reservation.eventID = ?;`;
 
   try {
     const [response] = await connection.query(query, [ID]);
@@ -89,7 +89,7 @@ const getByEventID = async (req, res) => {
 
 const addReservation = async (req, res) => {
   const { eventID, userID } = req.body;
-  const query = `INSERT INTO reservations (eventID, userID) VALUES (?, ?);`;
+  const query = `INSERT INTO reservation (eventID, userID) VALUES (?, ?);`;
 
   try {
     const [response] = await connection.query(query, [eventID, userID]);
@@ -112,7 +112,7 @@ const addReservation = async (req, res) => {
 const updateByID = async (req, res) => {
   const { ID } = req.params;
   const { eventID, userID } = req.body;
-  const query = `UPDATE reservations SET eventID = ?, userID = ? WHERE ID = ?;`;
+  const query = `UPDATE reservation SET eventID = ?, userID = ? WHERE ID = ?;`;
 
   try {
     const [response] = await connection.query(query, [eventID, userID, ID]);
@@ -138,7 +138,7 @@ const updateByID = async (req, res) => {
 
 const deleteByID = async (req, res) => {
   const { ID } = req.params;
-  const query = `DELETE FROM reservations WHERE ID = ?;`;
+  const query = `DELETE FROM reservation WHERE ID = ?;`;
   try {
     const [response] = await connection.query(query, [ID]);
     if (!response.affectedRows)
@@ -160,12 +160,12 @@ const deleteByID = async (req, res) => {
 };
 
 const getReservationByID = async (ID) => {
-  const query = `SELECT reservations.ID AS reservationID, reservations.userID, users.fullName, users.email, users.role, reservations.eventID, events.title, events.date, events.ticketPrice, events.description, events.venueID, venues.name, venues.description,venues.capacity,venues.image,venues.address
-                    FROM reservations
-                    INNER JOIN users ON users.ID = reservations.userID
-                    INNER JOIN events ON events.ID = reservations.eventID
+  const query = `SELECT reservation.ID AS reservationID, reservation.userID, users.fullName, users.email, users.role, reservation.eventID, events.title, events.date, events.ticketPrice, events.description, events.venueID, venues.name, venues.description,venues.capacity,venues.image,venues.address
+                    FROM reservation
+                    INNER JOIN users ON users.ID = reservation.userID
+                    INNER JOIN events ON events.ID = reservation.eventID
                     INNER JOIN venues ON venues.ID = events.venueID
-                    WHERE reservations.ID = ?;`;
+                    WHERE reservation.ID = ?;`;
   try {
     const [response] = await connection.query(query, [ID]);
     return response;

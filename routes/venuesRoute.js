@@ -8,6 +8,6 @@ const upload = multer({ storage: storage });
 router.get("/getAll", control.getAllVenue);
 router.get("/getVenueById/:id", control.venueById);
 router.post("/addVenue", upload.single("image"), control.postVenue);
-router.put("/update/:id", upload.single("image"), control.updateVenue);
+router.put("/update/:ID", upload.single("image"), control.updateVenue);
 router.delete("/deleteVenue/:id", control.deleteVenue);
 module.exports = router;
