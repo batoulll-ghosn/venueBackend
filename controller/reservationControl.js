@@ -89,52 +89,100 @@ const getByEventID = async (req, res) => {
 
 const addReservation = async (req, res) => {
   const { eventID, userID } = req.body;
-  const query = `INSERT INTO reservation (eventID, userID) VALUES (?, ?);`;
+ 
 
-  try {
-    const [response] = await connection.query(query, [eventID, userID]);
-
-    const [data] = await getReservationByID(response.insertId);
-    res.status(200).json({
-      success: true,
-      message: `Reservation added successfully`,
-      data: data,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: `Unable to reserve a ticket for user with id ${userID} in event with id = ${eventID}`,
-      error: error.message,
-    });
+  const checkEventQuery = `SELECT * FROM events WHERE ID = ?;`;
+  const [eventResponse] = await connection.query(checkEventQuery, [eventID]);
+  if (eventResponse.length === 0) {
+  return res.status(400).json({
+   success: false,
+   message: 'this event is not present',
+  });
   }
-};
+ 
 
-const updateByID = async (req, res) => {
+  const checkUserQuery = `SELECT * FROM users WHERE ID = ?;`;
+  const [userResponse] = await connection.query(checkUserQuery, [userID]);
+  if (userResponse.length === 0) {
+  return res.status(400).json({
+   success: false,
+   message: 'this user is not present',
+  });
+  }
+ 
+  const query = `INSERT INTO reservation (eventID, userID) VALUES (?, ?);`;
+ 
+  try {
+  const [response] = await connection.query(query, [eventID, userID]);
+ 
+  const [data] = await getReservationByID(response.insertId);
+  res.status(200).json({
+   success: true,
+   message: `Reservation added successfully`,
+   data: data,
+  });
+  } catch (error) {
+  return res.status(400).json({
+   success: false,
+   message: `Unable to reserve a ticket for user with id ${userID} in event with id = ${eventID}`,
+   error: error.message,
+  });
+  }
+ };
+ 
+
+ const updateByID = async (req, res) => {
   const { ID } = req.params;
   const { eventID, userID } = req.body;
-  const query = `UPDATE reservation SET eventID = ?, userID = ? WHERE ID = ?;`;
-
-  try {
-    const [response] = await connection.query(query, [eventID, userID, ID]);
-    if (!response.affectedRows)
-      return res.status(400).json({
-        success: false,
-        message: `Reservation with ID = ${ID} not found`,
-      });
-    const data = await getReservationByID(ID);
-    res.status(200).json({
-      success: true,
-      message: `Reservation with ID = ${ID} updated successfully`,
-      data: data[0],
-    });
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: `Unable to update reservation with ID = ${ID}`,
-      error: error.message,
-    });
+ 
+  const checkEventQuery = `SELECT * FROM events WHERE ID = ?;`;
+  const [eventResponse] = await connection.query(checkEventQuery, [eventID]);
+  if (eventResponse.length === 0) {
+  return res.status(400).json({
+  success: false,
+  message: 'this event is not present',
+  });
   }
-};
+  const checkUserQuery = `SELECT * FROM users WHERE ID = ?;`;
+  const [userResponse] = await connection.query(checkUserQuery, [userID]);
+  if (userResponse.length === 0) {
+  return res.status(400).json({
+  success: false,
+  message: 'this user is not present',
+  });
+  }
+
+  if (eventResponse.length === 0 && userResponse.length === 0) {
+  return res.status(400).json({
+  success: false,
+  message: 'eventID and UserID are not present',
+  });
+  }
+ 
+  const query = `UPDATE reservation SET eventID = ?, userID = ? WHERE ID = ?;`;
+ 
+  try {
+  const [response] = await connection.query(query, [eventID, userID, ID]);
+  if (!response.affectedRows)
+   return res.status(400).json({
+     success: false,
+     message: `Reservation with ID = ${ID} not found`,
+   });
+  const data = await getReservationByID(ID);
+  res.status(200).json({
+  success: true,
+  message: `Reservation with ID = ${ID} updated successfully`,
+  data: data[0],
+  });
+  } catch (error) {
+  return res.status(400).json({
+  success: false,
+  message: `Unable to update reservation with ID = ${ID}`,
+  error: error.message,
+  });
+  }
+ };
+ 
 
 const deleteByID = async (req, res) => {
   const { ID } = req.params;
