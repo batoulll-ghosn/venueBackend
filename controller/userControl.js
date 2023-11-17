@@ -1,31 +1,6 @@
 const dbb = require("../config/db");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
-const secretKey = crypto.randomBytes(64).toString("hex");
-
-const authenticateToken = (req, res, next) => {
-  const token = req.headers["authorization"];
-  if (token == null) return res.sendStatus(401);
-
-  jwt.verify(token, secretKey, (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
-};
-
-const checkRole = (role) => {
-  return (req, res, next) => {
-    if (req.user.role !== role) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied",
-      });
-    }
-    next();
-  };
-};
+const { generateToken } = require("../extra/token");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -87,39 +62,23 @@ const loginUser = async (req, res) => {
   }
 };
 
-const generateToken = (userId) => {
-  const secretKey = crypto.randomBytes(64).toString("hex");
-  const expiresIn = "1h";
-
-  const token = jwt.sign({ userId }, secretKey, { expiresIn: "1h" });
-
-  return token;
-};
-
 const register = async (req, res) => {
   const { fullName, email, password } = req.body;
-
+  const salt = bcrypt.genSaltSync(10);
+  const hashedPassword = bcrypt.hashSync(password, salt);
+  const query = `INSERT INTO users (fullName, email, password) VALUES (?, ?, ?);`;
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const query = `INSERT INTO users (fullName, email, password) VALUES (?, ?, ?);`;
-    const [response] = await connection.query(query, [
+    const [response] = await dbb.query(query, [
       fullName,
       email,
       hashedPassword,
     ]);
-
-    const userId = response.insertId;
-
-    const token = generateToken(userId);
-
-    const [data] = await getUserByID(userId);
-
+    const [data] = await getUserByID(response.insertId);
+    generateToken(1, "admin");
     res.status(200).json({
       success: true,
       message: `User registered successfully`,
       data: data,
-      token: token,
     });
   } catch (error) {
     return res.status(400).json({
@@ -131,20 +90,19 @@ const register = async (req, res) => {
 };
 
 const UserByUserId = async (req, res) => {
+  const { ID } = req.params;
   try {
-    const [result] = await dbb.query(`SELECT * FROM users WHERE ID = ?`, [
-      req.params.id,
-    ]);
-    res.status(200).json({
+    const response = await getUserByID(ID);
+    return res.status(200).json({
       success: true,
-      message: "Reservation data by user_id retrieved successfully",
-      data: result,
+      message: `User of id = ${ID} data retrieved successfully `,
+      data: response[0],
     });
   } catch (error) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
-      message: "Unable to get reservation",
-      error,
+      message: `Unable to get user by id = ${ID}`,
+      error: error.message,
     });
   }
 };
@@ -236,7 +194,7 @@ const switchToAdmin = async (req, res) => {
 const getUserByID = async (ID) => {
   const query = `SELECT ID, fullName, email, role FROM users WHERE ID = ?;`;
   try {
-    const [response] = await connection.query(query, [ID]);
+    const [response] = await dbb.query(query, [ID]);
     return response;
   } catch (error) {
     return error;
