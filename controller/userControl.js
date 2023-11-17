@@ -53,8 +53,28 @@ const login = async (req, res) => {
 
 const register = async (req, res) => {
   const { fullName, email, password } = req.body;
+ 
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
+  if (!strongPasswordRegex.test(password)) {
+    return res.status(400).json({
+      success: false,
+      message: 'write a strong password',
+    });
+  }
+ 
   const salt = bcrypt.genSaltSync(10);
   const hashedPassword = bcrypt.hashSync(password, salt);
+ 
+
+  const checkEmailQuery = `SELECT * FROM users WHERE email = ?;`;
+  const [emailResponse] = await dbb.query(checkEmailQuery, [email]);
+  if (emailResponse.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'email already been used',
+    });
+  }
+ 
   const query = `INSERT INTO users (fullName, email, password) VALUES (?, ?, ?);`;
   try {
     const [response] = await dbb.query(query, [
@@ -76,8 +96,8 @@ const register = async (req, res) => {
       error: error.message,
     });
   }
-};
-
+ };
+ 
 const UserByUserId = async (req, res) => {
   const { ID } = req.params;
   try {
