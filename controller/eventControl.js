@@ -48,7 +48,25 @@ const getByID = async (req, res) => {
 
 const addEvent = async (req, res) => {
   const { title, ticketPrice, date, description, venueID } = req.body;
-  const query = `INSERT INTO events (title, ticketPrice,date, description, venueID) VALUES (?,?, ?, ?, ?)`;
+
+  const checkVenueQuery = `SELECT * FROM venues WHERE ID = ?;`;
+  const [venueResponse] = await connection.query(checkVenueQuery, [venueID]);
+  if (venueResponse.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "this venue is not present",
+    });
+  }
+
+  const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateFormat.test(date)) {
+    return res.status(400).json({
+      success: false,
+      message: "write the Date correctly by the following formula: yyyy-mm-dd",
+    });
+  }
+
+  const query = `INSERT INTO events (title, ticketPrice, date, description, venueID) VALUES (?, ?, ?, ?, ?)`;
   console.log(date);
   try {
     const [response] = await connection.query(query, [
@@ -76,45 +94,67 @@ const addEvent = async (req, res) => {
 
 const updateByID = async (req, res) => {
   const { ID } = req.params;
-  const { title, ticketPrice, description, venueID } = req.body;
+  const { title, ticketPrice, description, venueID, date } = req.body;
+ 
+
+  const checkVenueQuery = `SELECT * FROM venues WHERE ID = ?;`;
+  const [venueResponse] = await connection.query(checkVenueQuery, [venueID]);
+  if (venueResponse.length === 0) {
+  return res.status(400).json({
+    success: false,
+    message: 'this venue is not present',
+  });
+  }
+ 
+  // Check if the date is in the correct format
+  const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateFormat.test(date)) {
+  return res.status(400).json({
+    success: false,
+    message: 'write the correctly by the following formula: yyyy-mm-dd',
+  });
+  }
+ 
   const query = `UPDATE events SET title = ?, ticketPrice = ?, description = ?, venueID = ? WHERE ID = ?`;
-  console.log(req.body);
+
   try {
-    if (!title || !ticketPrice || !description || !venueID) {
-      return res.status(400).json({
-        success: false,
-        message: `Enter all fields to update event with id = ${ID}.`,
-      });
-    }
-
-    const [response] = await connection.query(query, [
-      title,
-      ticketPrice,
-      description,
-      venueID,
-      ID,
-    ]);
-
-    if (!response.affectedRows)
-      return res.status(400).json({
-        success: false,
-        message: `Event with id = ${ID} not found.`,
-      });
-
-    const data = await getEventByID(ID);
-    return res.status(200).json({
-      success: true,
-      message: `Event updated successfully.`,
-      data: { ...data[0], date: format(new Date(data[0].date), "yyyy-MM-dd") },
-    });
-  } catch (error) {
+  if (!title || !ticketPrice || !description || !venueID || !date) {
     return res.status(400).json({
       success: false,
-      message: `Error while trying to update event with id ${ID}.`,
-      error: error.message,
+      message: `Enter all fields to update event with id = ${ID}.`,
     });
   }
-};
+ 
+  const [response] = await connection.query(query, [
+    title,
+    ticketPrice,
+    description,
+    venueID,
+    ID,
+  ]);
+ 
+  if (!response.affectedRows)
+    return res.status(400).json({
+      success: false,
+      message: `Event with id = ${ID} not found.`,
+    });
+ 
+  const data = await getEventByID(ID);
+  return res.status(200).json({
+    success: true,
+    message: `Event updated successfully.`,
+    data: { ...data[0], date: format(new Date(data[0].date), "yyyy-MM-dd") },
+  });
+  } catch (error) {
+  return res.status(400).json({
+    success: false,
+    message: `Error while trying to update event with id ${ID}.`,
+    error: error.message,
+  });
+  }
+ };
+ 
+ 
 
 const deleteByID = async (req, res) => {
   const { ID } = req.params;
